@@ -2,6 +2,7 @@
 #![allow(unused_imports)]
 #![no_main]
 
+use alloc::format;
 use defmt_rtt as _;
 use esp_backtrace as _;
 extern crate alloc;
@@ -19,8 +20,7 @@ use esp_hal::peripherals::Peripherals;
 use esp_hal::rng::Rng;
 use esp_hal::timer::timg::TimerGroup;
 use esp_hal::{init, main};
-use esp_hal::analog::adc::{Adc, AdcConfig};
-use esp_hal::analog::adc::Attenuation::_11dB;
+use esp_hal::analog::adc::{Adc, AdcConfig, Attenuation};
 use loadcell::LoadCell;
 use meristem_tft::hw390::hw390::Hw390;
 use meristem_tft::hx711::hx711::Loadcell;
@@ -42,12 +42,12 @@ fn main() -> ! {
 
     let delay = Delay::new();
     // pins
-    let dc = peripherals.GPIO2;
-    let hw_390_pin = peripherals.GPIO3;
-    let rst = peripherals.GPIO4;
+    let hw_390_pin = peripherals.GPIO2;
     let hx711_dt = Input::new(peripherals.GPIO5, Pull::None);
     let hx711_sck = Output::new(peripherals.GPIO6, Level::Low);
     // let mut backlight = PinDriver::output(peripherals.pins.gpio5).unwrap();
+    let rst = peripherals.GPIO8;
+    let dc = peripherals.GPIO10;
     let tcs = peripherals.GPIO15;
     let mosi = peripherals.GPIO18; // sdo -> MOSI
     let sclk = peripherals.GPIO19;
@@ -56,19 +56,19 @@ fn main() -> ! {
 
     let mut load_cell = Loadcell::new(hx711_sck, hx711_dt, delay);
     let mut adc1_config = AdcConfig::new();
-    let mut pin = adc1_config.enable_pin(hw_390_pin, _11dB);
+    let mut pin = adc1_config.enable_pin(hw_390_pin, Attenuation::_11dB);
     let mut adc1 = Adc::new(peripherals.ADC1, adc1_config);
     let mut hw390 = Hw390::new(adc1, pin);
     let mut buffer: [u8; 512] = [0_u8; 512];
     let mut tft = TFT::new(peripherals.SPI2, sclk, miso, mosi, cs, rst, dc,tcs, &mut buffer);
     tft.clear(Rgb565::WHITE);
     tft.draw_smiley();
+    info!("Device full started!");
     loop {
-        info!("Hello world!");
         let weight = load_cell.read_scaled();
-        tft.get_touch();
         tft.println(weight.to_string().as_str(), 20, 20);
-        tft.println(hw390.read().value.to_string().as_str(), 20, 40);
+        let hw390_value = format!("{:.1$}", hw390.read(), 2);
+        tft.println(hw390_value.as_str(), 20, 40);
         delay.delay_millis(500);
     }
 }

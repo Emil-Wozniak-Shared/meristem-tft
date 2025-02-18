@@ -42,8 +42,8 @@ impl<'spi> TFT<'spi> {
         miso: GpioPin<20>,
         mosi: GpioPin<18>,
         cs: GpioPin<23>,
-        rst: GpioPin<4>,
-        dc: GpioPin<2>,
+        rst: GpioPin<8>,
+        dc: GpioPin<10>,
         tcs: GpioPin<15>,
         buffer: &'spi mut [u8],
     ) -> TFT<'spi> {
@@ -78,22 +78,10 @@ impl<'spi> TFT<'spi> {
         self.display.clear(color).unwrap();
     }
 
-    pub fn get_touch(&mut self) {
-        // match self.xpt2046.get() {
-        //     Ok(x) => {
-        //         self.println(x.1.to_string().as_str(), 30, 50);
-        //         self.println(x.0.to_string().as_str(), 30, 40);
-        //     }
-        //     Err(e) => {
-        //         self.println(e.to_string().as_str(), 30, 40);
-        //     }
-        // }
-    }
-
     pub fn println(&mut self, text: &str, x: i32, y: i32) {
         let style = MonoTextStyle::new(&FONT_8X13, Rgb565::RED);
         // refresh block
-        Rectangle::new(Point::new(x - 20, y - 20), Size::new(240, 30))
+        Rectangle::new(Point::new(x - 20, y - 20), Size::new(40, 20))
             .into_styled(PrimitiveStyle::with_fill(Rgb565::WHITE))
             .draw(&mut self.display).unwrap();
         //draw new text
