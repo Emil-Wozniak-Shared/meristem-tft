@@ -16,11 +16,11 @@ use embedded_graphics::{
 use esp_hal::clock::CpuClock;
 use esp_hal::delay::Delay;
 use esp_hal::gpio::{Input, Level, Output, Pull};
-use esp_hal::peripherals::Peripherals;
+use esp_hal::peripherals::{Peripherals, ADC1};
 use esp_hal::rng::Rng;
 use esp_hal::timer::timg::TimerGroup;
 use esp_hal::{init, main};
-use esp_hal::analog::adc::{Adc, AdcConfig, Attenuation};
+use esp_hal::analog::adc::{Adc, AdcCalBasic, AdcCalSource, AdcConfig, Attenuation};
 use loadcell::LoadCell;
 use meristem_tft::hw390::hw390::Hw390;
 use meristem_tft::hx711::hx711::Loadcell;
@@ -42,7 +42,7 @@ fn main() -> ! {
 
     let delay = Delay::new();
     // pins
-    let hw_390_pin = peripherals.GPIO2;
+    let hw_390_pin = peripherals.GPIO0;
     let hx711_dt = Input::new(peripherals.GPIO5, Pull::None);
     let hx711_sck = Output::new(peripherals.GPIO6, Level::Low);
     // let mut backlight = PinDriver::output(peripherals.pins.gpio5).unwrap();
@@ -56,12 +56,13 @@ fn main() -> ! {
 
     let mut load_cell = Loadcell::new(hx711_sck, hx711_dt, delay);
     let mut adc1_config = AdcConfig::new();
-    let mut pin = adc1_config.enable_pin(hw_390_pin, Attenuation::_11dB);
+
+    let mut pin = adc1_config.enable_pin_with_cal(hw_390_pin, Attenuation::_11dB);
     let mut adc1 = Adc::new(peripherals.ADC1, adc1_config);
-    let mut hw390 = Hw390::new(adc1, pin);
+    let mut hw390 = Hw390::new(adc1, pin, );
     let mut buffer: [u8; 512] = [0_u8; 512];
     let mut tft = TFT::new(peripherals.SPI2, sclk, miso, mosi, cs, rst, dc,tcs, &mut buffer);
-    tft.clear(Rgb565::WHITE);
+    // tft.clear(Rgb565::WHITE);
     tft.draw_smiley();
     info!("Device full started!");
     loop {
